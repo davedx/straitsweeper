@@ -106,40 +106,184 @@
     text-align: center;
   }
 
+  #game-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  #game-col {
+    display: flex;
+    flex-direction: column;
+  }
+  #game-col #leaderboard {
+    margin-top: 8px;
+    max-width: none;
+    width: 100%;
+  }
+  #oil-tickers {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 26px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  .oil-price { color: #000; transition: color 0.08s; }
+  .oil-price.flash { color: #cc0000; }
+
   #info {
     margin-top: 8px;
     font-size: 12px;
     color: #444;
     font-family: 'Courier New', monospace;
   }
+
+  /* ── Leaderboard ── */
+  #leaderboard {
+    margin-top: 12px;
+    border: 3px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    background: #c0c0c0;
+    padding: 6px;
+    width: 100%;
+    max-width: 842px;
+    font-family: 'Courier New', monospace;
+  }
+  #leaderboard h2 {
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  #scores-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  #scores-table th {
+    background: #000080;
+    color: #fff;
+    padding: 2px 8px;
+    text-align: left;
+  }
+  #scores-table td {
+    padding: 2px 8px;
+    border-bottom: 1px solid #aaa;
+  }
+  #scores-table tr:nth-child(even) td { background: #d4d0c8; }
+  #lb-status {
+    font-size: 11px;
+    color: #555;
+    text-align: center;
+    margin-top: 4px;
+    min-height: 14px;
+  }
+
+  /* ── Win modal ── */
+  #win-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  #win-modal.open { display: flex; }
+  #win-box {
+    background: #c0c0c0;
+    border: 3px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    padding: 16px 20px;
+    min-width: 260px;
+    font-family: 'Courier New', monospace;
+  }
+  #win-box h2 { font-size: 14px; margin-bottom: 10px; }
+  #win-box p  { font-size: 12px; margin-bottom: 8px; }
+  #win-name {
+    width: 100%;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    padding: 3px 5px;
+    border: 2px solid;
+    border-color: #808080 #ffffff #ffffff #808080;
+    background: #fff;
+    margin-bottom: 10px;
+  }
+  .win-btns { display: flex; gap: 6px; }
+  .win-btn {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    padding: 4px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    cursor: pointer;
+  }
+  .win-btn:active { border-color: #808080 #ffffff #ffffff #808080; }
 </style>
 </head>
 <body>
 
 <h1>&#9875; STRAITSWEEPER</h1>
 
-<div id="game-container">
-  <div id="header">
-    <div class="led" id="mine-display">000</div>
-    <button id="reset-btn" id="reset-btn" onclick="resetGame()">&#128578;</button>
-    <div class="led" id="timer-display">000</div>
+<div id="game-row">
+  <div id="game-col">
+    <div id="game-container">
+      <div id="header">
+        <div class="led" id="mine-display">000</div>
+        <button id="reset-btn" onclick="resetGame()">&#128578;</button>
+        <div class="led" id="timer-display">000</div>
+      </div>
+      <div id="board-wrapper">
+        <canvas id="bg-canvas"></canvas>
+        <canvas id="game-canvas"></canvas>
+      </div>
+    </div>
+
+    <div id="error-msg">
+      &#9888; Cannot read pixel data due to browser security policy.<br>
+      Please open this file via a local server:<br>
+      <code>python3 -m http.server 8000</code> then visit <code>http://localhost:8000</code>
+    </div>
+
+    <div id="info">Left-click: reveal &nbsp;|&nbsp; Right-click: flag &nbsp;|&nbsp; Click revealed number: chord</div>
+
+    <div id="leaderboard">
+  <h2>&#127942; HIGH SCORES</h2>
+  <table id="scores-table">
+    <thead><tr><th>#</th><th>Name</th><th>Time</th><th>Date</th></tr></thead>
+    <tbody id="scores-body"><tr><td colspan="4" style="text-align:center;color:#888">Loading...</td></tr></tbody>
+  </table>
+    <div id="lb-status"></div>
+    </div>
+  </div><!-- end #game-col -->
+
+  <div id="oil-tickers">
+    <div class="oil-price" id="wti">WTI: $75.0</div>
+    <div class="oil-price" id="brent">Brent: $79.0</div>
+    <div class="oil-price" id="spy">SPY: $678.0</div>
   </div>
-  <div id="board-wrapper">
-    <canvas id="bg-canvas"></canvas>
-    <canvas id="game-canvas"></canvas>
+</div><!-- end #game-row -->
+
+<div id="win-modal">
+  <div id="win-box">
+    <h2>&#127881; You cleared the Strait!</h2>
+    <p id="win-time"></p>
+    <input id="win-name" type="text" maxlength="20" placeholder="Enter your name" autocomplete="off">
+    <div class="win-btns">
+      <button class="win-btn" onclick="submitScore()">Submit</button>
+      <button class="win-btn" onclick="closeWinModal()">Skip</button>
+    </div>
   </div>
 </div>
-
-<div id="error-msg">
-  &#9888; Cannot read pixel data due to browser security policy.<br>
-  Please open this file via a local server:<br>
-  <code>python3 -m http.server 8000</code> then visit <code>http://localhost:8000</code>
-</div>
-
-<div id="info">Left-click: reveal &nbsp;|&nbsp; Right-click: flag &nbsp;|&nbsp; Click revealed number: chord</div>
 
 <script>
-const CELL = 18;
+const SCALE = 1.3 * 1.2; // 1.56x
+const CELL = 20;
 const MINE_DENSITY = 0.16;
 
 // Classic number colors
@@ -155,7 +299,7 @@ let firstClick = true;
 let timerInterval = null, timerVal = 0;
 let pressedCell = null;
 
-img.onload = () => setupBoard();
+img.onload = () => { setupBoard(); loadScores(); };
 img.onerror = () => { document.getElementById('error-msg').style.display = 'block'; };
 img.src = 'strait.jpeg';
 
@@ -191,11 +335,13 @@ function cellIsWater(row, col) {
 function setupBoard() {
   const bgC = document.getElementById('bg-canvas');
   const gmC = document.getElementById('game-canvas');
-  bgC.width = gmC.width = img.naturalWidth;
-  bgC.height = gmC.height = img.naturalHeight;
+  const W = Math.round(img.naturalWidth * SCALE);
+  const H = Math.round(img.naturalHeight * SCALE);
+  bgC.width = gmC.width = W;
+  bgC.height = gmC.height = H;
 
   const bgCtx = bgC.getContext('2d');
-  bgCtx.drawImage(img, 0, 0);
+  bgCtx.drawImage(img, 0, 0, W, H);
 
   try {
     imgData = bgCtx.getImageData(0, 0, bgC.width, bgC.height);
@@ -238,7 +384,7 @@ function resetGame() {
     }
   }
 
-  totalMines = Math.max(1, Math.floor(waterCells.length * MINE_DENSITY));
+  totalMines = 45;
   updateMineDisplay();
   draw();
 }
@@ -424,6 +570,7 @@ function checkWin() {
     flagCount = totalMines;
     updateMineDisplay();
     draw();
+    setTimeout(() => openWinModal(timerVal), 300);
   }
 }
 
@@ -552,6 +699,136 @@ function drawMine(ctx, x, y, S) {
   ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(cx - r * 0.32, cy - r * 0.32, r * 0.26, 0, Math.PI * 2); ctx.fill();
 }
+
+// ─── Leaderboard (jsonbin.io) ─────────────────────────────────────────────────
+
+const BIN_ID  = '69b066a584682b35628656b2';
+const BIN_KEY = '$2a$10$n/W7GgkXMOxay1sVJSISfuoVDa6mHf/e0996fjyi.u6ZJ8rsggLrS';
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const HEADERS = { 'Content-Type': 'application/json', 'X-Master-Key': BIN_KEY };
+
+async function loadScores() {
+  setLbStatus('Loading...');
+  try {
+    const res = await fetch(BIN_URL + '/latest', { headers: HEADERS });
+    const data = await res.json();
+    renderScores(data.record.scores || []);
+    setLbStatus('');
+  } catch (e) {
+    setLbStatus('Could not load scores.');
+  }
+}
+
+async function saveScore(name, time) {
+  setLbStatus('Saving...');
+  try {
+    // Read current scores
+    const res = await fetch(BIN_URL + '/latest', { headers: HEADERS });
+    const data = await res.json();
+    const scores = data.record.scores || [];
+    scores.push({ name, time, date: new Date().toLocaleDateString() });
+    scores.sort((a, b) => a.time - b.time);
+    scores.splice(10); // keep top 10
+    // Write back
+    await fetch(BIN_URL, {
+      method: 'PUT',
+      headers: HEADERS,
+      body: JSON.stringify({ scores })
+    });
+    renderScores(scores);
+    setLbStatus('Score saved!');
+    setTimeout(() => setLbStatus(''), 2000);
+  } catch (e) {
+    setLbStatus('Could not save score.');
+  }
+}
+
+function renderScores(scores) {
+  const tbody = document.getElementById('scores-body');
+  if (!scores.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888">No scores yet — be the first!</td></tr>';
+    return;
+  }
+  tbody.innerHTML = scores.map((s, i) =>
+    `<tr><td>${i + 1}</td><td>${escHtml(s.name)}</td><td>${s.time}s</td><td>${escHtml(s.date)}</td></tr>`
+  ).join('');
+}
+
+function setLbStatus(msg) {
+  document.getElementById('lb-status').textContent = msg;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Win modal
+function openWinModal(time) {
+  document.getElementById('win-time').textContent = `Your time: ${time} seconds`;
+  document.getElementById('win-name').value = localStorage.getItem('straitsweeper-name') || '';
+  document.getElementById('win-modal').classList.add('open');
+  setTimeout(() => document.getElementById('win-name').focus(), 50);
+}
+
+function closeWinModal() {
+  document.getElementById('win-modal').classList.remove('open');
+}
+
+function submitScore() {
+  const name = document.getElementById('win-name').value.trim() || 'Anonymous';
+  localStorage.setItem('straitsweeper-name', name);
+  closeWinModal();
+  saveScore(name, timerVal);
+}
+
+// ─── WTI price ticker ────────────────────────────────────────────────────────
+
+let wtiPrice = 75.0;
+let spyPrice = 678.0;
+
+function tickOil() {
+  const delta = +(Math.random() * 5 - 1.7).toFixed(1);
+  wtiPrice = Math.max(20, +(wtiPrice + delta).toFixed(1));
+  const brentPrice = +(wtiPrice + 4).toFixed(1);
+
+  spyPrice = Math.max(1, +(spyPrice + +(Math.random() * 5 - 3.3).toFixed(1)).toFixed(1));
+
+  const wtiEl = document.getElementById('wti');
+  const brentEl = document.getElementById('brent');
+  const spyEl = document.getElementById('spy');
+
+  wtiEl.classList.add('flash');
+  brentEl.classList.add('flash');
+  spyEl.classList.add('flash');
+  wtiEl.textContent = `WTI: $${wtiPrice.toFixed(1)}`;
+  brentEl.textContent = `Brent: $${brentPrice.toFixed(1)}`;
+  spyEl.textContent = `SPY: $${spyPrice.toFixed(1)}`;
+  setTimeout(() => { wtiEl.classList.remove('flash'); brentEl.classList.remove('flash'); spyEl.classList.remove('flash'); }, 180);
+
+  if (wtiPrice >= 150 && gameState === 'playing') {
+    const mines = waterCells.filter(([r, c]) => grid[r][c].mine && !grid[r][c].revealed);
+    if (mines.length) {
+      const [r, c] = mines[Math.floor(Math.random() * mines.length)];
+      grid[r][c].revealed = true;
+      grid[r][c].hitMine = true;
+      loseGame();
+    }
+  }
+
+  // Tick every 2–6s (half as often)
+  setTimeout(tickOil, 2000 + Math.random() * 4000);
+}
+
+setTimeout(tickOil, 2000 + Math.random() * 4000);
+
+// Allow Enter key in name field
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('win-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitScore();
+  });
+});
+
+// ─── Flag drawing ─────────────────────────────────────────────────────────────
 
 function drawFlag(ctx, x, y, S) {
   const poleX = x + S * 0.38, poleTop = y + S * 0.15, poleH = S * 0.55;
