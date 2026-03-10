@@ -885,13 +885,34 @@
         "Content-Type": "application/json",
         "X-Master-Key": BIN_KEY,
       };
+      const SIG_SALT = "straitsweeper-v1-hormuz";
+
+      async function signEntry(name, time) {
+        const msg = `${name}|${time}|${SIG_SALT}`;
+        const buf = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(msg),
+        );
+        return Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      }
+
+      async function verifyEntry(s) {
+        if (!s.sig) return false;
+        return (await signEntry(s.name, s.time)) === s.sig;
+      }
 
       async function loadScores() {
         setLbStatus("Loading...");
         try {
           const res = await fetch(BIN_URL + "/latest", { headers: HEADERS });
           const data = await res.json();
-          renderScores(data.record.scores || []);
+          const raw = data.record.scores || [];
+          const verified = (
+            await Promise.all(raw.map(async (s) => ((await verifyEntry(s)) ? s : null)))
+          ).filter(Boolean);
+          renderScores(verified);
           setLbStatus("");
         } catch (e) {
           setLbStatus("Could not load scores.");
@@ -901,20 +922,23 @@
       async function saveScore(name, time) {
         setLbStatus("Saving...");
         try {
-          // Read current scores
+          const sig = await signEntry(name, time);
           const res = await fetch(BIN_URL + "/latest", { headers: HEADERS });
           const data = await res.json();
-          const scores = data.record.scores || [];
-          scores.push({ name, time, date: new Date().toLocaleDateString() });
-          scores.sort((a, b) => a.time - b.time);
-          scores.splice(10); // keep top 10
-          // Write back
+          const raw = data.record.scores || [];
+          // Keep only verified entries, then add ours
+          const verified = (
+            await Promise.all(raw.map(async (s) => ((await verifyEntry(s)) ? s : null)))
+          ).filter(Boolean);
+          verified.push({ name, time, date: new Date().toLocaleDateString(), sig });
+          verified.sort((a, b) => a.time - b.time);
+          verified.splice(10);
           await fetch(BIN_URL, {
             method: "PUT",
             headers: HEADERS,
-            body: JSON.stringify({ scores }),
+            body: JSON.stringify({ scores: verified }),
           });
-          renderScores(scores);
+          renderScores(verified);
           setLbStatus("Score saved!");
           setTimeout(() => setLbStatus(""), 2000);
         } catch (e) {
